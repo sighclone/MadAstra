@@ -80,6 +80,19 @@ class _MyAppState extends State<MyApp> {
   }
 }
 
+class iss extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: AppBar(
+          title: const Text("Live ISS location"),
+        ),
+        body: const Center(
+          child: Text("Lat: Lon: "),
+        ));
+  }
+}
+
 // ignore: camel_case_types
 class myhome extends StatelessWidget {
   const myhome({Key? key}) : super(key: key);
@@ -111,6 +124,16 @@ class myhome extends StatelessWidget {
         title: const Text('MadAstra'),
         actions: <Widget>[
           IconButton(
+            icon: const Icon(Icons.satellite_alt),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => iss(),
+                ),
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.image),
             onPressed: () {
               Navigator.of(context).push(
@@ -139,7 +162,6 @@ class myhome extends StatelessWidget {
           if (snapshot.hasData) {
             final analysis = snapshot.data!['Analysis'];
             final data = snapshot.data!['Data'];
-            final visibility = snapshot.data!['Visibility'];
             return SingleChildScrollView(
               padding: const EdgeInsets.all(20.0),
               child: Column(
@@ -152,7 +174,7 @@ class myhome extends StatelessWidget {
                       fontSize: 12.0,
                     ),
                   ),
-                  const SizedBox(height: 10.0),
+                  const SizedBox(height: 50.0),
                   const Text(
                     "SUMMARY",
                     style:
@@ -163,14 +185,14 @@ class myhome extends StatelessWidget {
                     style: const TextStyle(
                         fontWeight: FontWeight.normal, fontSize: 18.0),
                   ),
-                  const SizedBox(height: 10.0),
+                  const SizedBox(height: 50.0),
                   const Text(
                     "STATS",
                     style:
                         TextStyle(fontWeight: FontWeight.bold, fontSize: 18.0),
                   ),
                   Text(
-                    "Temperature: ${data['main']['temp']}\nPressure: ${data['main']['pressure']}\nHumidity: ${data['main']['humidity']}",
+                    "Temperature: ${data['main']['temp']}\nPressure: ${data['main']['pressure']}\nHumidity: ${data['main']['humidity']}\nVisibility: ${data['visibility']}",
                     style: const TextStyle(
                         fontWeight: FontWeight.normal, fontSize: 18.0),
                   ),
