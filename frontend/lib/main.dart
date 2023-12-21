@@ -3,7 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 void main() {
-  runApp(MyApp());
+  runApp(const MyApp());
 }
 
 class MyApp extends StatefulWidget {
@@ -13,11 +13,80 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
-  Future<Map<String, dynamic>> fetchData() async {
-    final response = await http.get(
-        Uri.parse('https://solar-geek-api.onrender.com/v1/getApodApiImage'));
+// ignore: camel_case_types
+class apod extends StatelessWidget {
+  const apod({Key? key}) : super(key: key);
+  @override
+  Widget build(BuildContext context) {
+    Future<Map<String, dynamic>> fetchApodData() async {
+      final response = await http.get(
+          Uri.parse('https://solar-geek-api.onrender.com/v1/getApodApiImage'));
 
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } else {
+        throw Exception('Failed to load data');
+      }
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+          centerTitle: true, title: const Text("Astronomy Pic of the Day!")),
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: fetchApodData(),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            final data = snapshot.data!['Data'];
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    data['date'],
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, fontSize: 18.0),
+                  ),
+                  const SizedBox(height: 10.0),
+                  Text(
+                    data['explanation'],
+                    style: const TextStyle(fontSize: 16.0),
+                  ),
+                  const SizedBox(height: 10.0),
+                  Image.network(data['url']),
+                  const SizedBox(height: 10.0),
+                  Text(
+                    'Copyright: ${data['copyright']}',
+                    style: const TextStyle(fontStyle: FontStyle.italic),
+                  ),
+                ],
+              ),
+            );
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          } else {
+            return const Center(child: CircularProgressIndicator());
+          }
+        },
+      ),
+    );
+  }
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(home: myhome());
+  }
+}
+
+// ignore: camel_case_types
+class myhome extends StatelessWidget {
+  const myhome({Key? key}) : super(key: key);
+  Future<Map<String, dynamic>> fetchWeatherData() async {
+    final mycity = "Bangalore";
+    final response = await http.get(Uri.parse(
+        'https://solar-geek-api.onrender.com/v1/performWeatherAnalysis?city=$mycity'));
     if (response.statusCode == 200) {
       return jsonDecode(response.body) as Map<String, dynamic>;
     } else {
@@ -27,48 +96,123 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('MadAstra - Astronomy Image of the Day'),
-        ),
-        body: FutureBuilder<Map<String, dynamic>>(
-          future: fetchData(),
-          builder: (context, snapshot) {
-            if (snapshot.hasData) {
-              final data = snapshot.data!['Data'];
-              return SingleChildScrollView(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      data['date'],
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 18.0),
-                    ),
-                    const SizedBox(height: 10.0),
-                    Text(
-                      data['explanation'],
-                      style: const TextStyle(fontSize: 16.0),
-                    ),
-                    const SizedBox(height: 10.0),
-                    Image.network(data['url']),
-                    const SizedBox(height: 10.0),
-                    Text(
-                      'Copyright: ${data['copyright']}',
-                      style: const TextStyle(fontStyle: FontStyle.italic),
-                    ),
-                  ],
-                ),
-              );
-            } else if (snapshot.hasError) {
-              return Center(child: Text('Error: ${snapshot.error}'));
-            } else {
-              return const Center(child: CircularProgressIndicator());
-            }
+    return Scaffold(
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.favorite),
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const credits(),
+              ),
+            );
           },
         ),
+        title: const Text('MadAstra'),
+        actions: <Widget>[
+          IconButton(
+            icon: const Icon(Icons.image),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const apod(),
+                ),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.landscape),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const apod(),
+                ),
+              );
+            },
+          ),
+        ],
+        // bottom: ,
+      ),
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: fetchWeatherData(),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            final analysis = snapshot.data!['Analysis'];
+            final data = snapshot.data!['Data'];
+            final visibility = snapshot.data!['Visibility'];
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Lat: ${data['coord']['lat']}   Lon: ${data['coord']['lon']}",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.normal,
+                      fontSize: 12.0,
+                    ),
+                  ),
+                  const SizedBox(height: 10.0),
+                  const Text(
+                    "SUMMARY",
+                    style:
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 18.0),
+                  ),
+                  Text(
+                    "$analysis",
+                    style: const TextStyle(
+                        fontWeight: FontWeight.normal, fontSize: 18.0),
+                  ),
+                  const SizedBox(height: 10.0),
+                  const Text(
+                    "STATS",
+                    style:
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 18.0),
+                  ),
+                  Text(
+                    "Temperature: ${data['main']['temp']}\nPressure: ${data['main']['pressure']}\nHumidity: ${data['main']['humidity']}",
+                    style: const TextStyle(
+                        fontWeight: FontWeight.normal, fontSize: 18.0),
+                  ),
+                  // Text(
+                  //   data['Analysis'],
+                  //   style: const TextStyle(fontSize: 16.0),
+                  // ),
+                  // const SizedBox(height: 10.0),
+                  // Image.network(data['visibility']),
+                  // const SizedBox(height: 10.0),
+                  // Text(
+                  //   'Copyright: ${data['coord']}',
+                  //   style: const TextStyle(fontStyle: FontStyle.italic),
+                  // ),
+                ],
+              ),
+            );
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          } else {
+            return const Center(child: CircularProgressIndicator());
+          }
+        },
+      ),
+    );
+  }
+}
+
+// ignore: camel_case_types
+class credits extends StatelessWidget {
+  const credits({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    debugPrint("credits opened");
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Credits"),
+      ),
+      body: const Center(
+        child: Text(
+            "Made by Abhinav Sadhu\nPowered by Solar Searcher API - by Sankalp Pandey"),
       ),
     );
   }
