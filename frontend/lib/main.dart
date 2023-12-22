@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
 
 void main() {
+  debugPrint("ON");
+  debugPrint("OFF");
   runApp(const MyApp());
 }
 
@@ -132,6 +136,35 @@ class iss extends StatelessWidget {
 // ignore: camel_case_types
 class myhome extends StatelessWidget {
   const myhome({Key? key}) : super(key: key);
+  Future<String> getCurrentCityAndPrint() async {
+    try {
+      WidgetsFlutterBinding.ensureInitialized();
+
+      // Check for location permissions
+      LocationPermission permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        return "Location permission denied";
+      }
+
+      // Get current location
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      // GEOCODE!!!
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+      Placemark place = placemarks[0];
+      String city = place.locality ?? "Unknown"; // :/ null safety
+
+      return city;
+    } catch (error) {
+      return "Error getting current city: $error";
+    }
+  }
+
   Future<Map<String, dynamic>> fetchWeatherData() async {
     const mycity = "Bangalore";
     final response = await http.get(Uri.parse(
@@ -146,114 +179,130 @@ class myhome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.favorite),
-          onPressed: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => const credits(),
-              ),
-            );
-          },
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.favorite),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const credits(),
+                ),
+              );
+            },
+          ),
+          title: const Text('MadAstra'),
+          actions: <Widget>[
+            IconButton(
+              icon: const Icon(Icons.satellite_alt),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => iss(),
+                  ),
+                );
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.image),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const apod(),
+                  ),
+                );
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.landscape),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const apod(),
+                  ),
+                );
+              },
+            ),
+          ],
+          // bottom: ,
         ),
-        title: const Text('MadAstra'),
-        actions: <Widget>[
-          IconButton(
-            icon: const Icon(Icons.satellite_alt),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => iss(),
-                ),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.image),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const apod(),
-                ),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.landscape),
-            onPressed: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => const apod(),
-                ),
-              );
-            },
-          ),
-        ],
-        // bottom: ,
-      ),
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: fetchWeatherData(),
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            final analysis = snapshot.data!['Analysis'];
-            final data = snapshot.data!['Data'];
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Lat: ${data['coord']['lat']}   Lon: ${data['coord']['lon']}",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.normal,
-                      fontSize: 12.0,
+        body: Column(
+          children: [
+            FutureBuilder<Map<String, dynamic>>(
+              future: fetchWeatherData(),
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  final analysis = snapshot.data!['Analysis'];
+                  final data = snapshot.data!['Data'];
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Lat: ${data['coord']['lat']}   Lon: ${data['coord']['lon']}",
+                          style: const TextStyle(
+                            fontWeight: FontWeight.normal,
+                            fontSize: 12.0,
+                          ),
+                        ),
+                        const SizedBox(height: 50.0),
+                        const Text(
+                          "SUMMARY",
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 18.0),
+                        ),
+                        Text(
+                          "$analysis",
+                          style: const TextStyle(
+                              fontWeight: FontWeight.normal, fontSize: 18.0),
+                        ),
+                        const SizedBox(height: 50.0),
+                        const Text(
+                          "STATS",
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 18.0),
+                        ),
+                        Text(
+                          "Temperature: ${data['main']['temp']}\nPressure: ${data['main']['pressure']}\nHumidity: ${data['main']['humidity']}\nVisibility: ${data['visibility']}",
+                          style: const TextStyle(
+                              fontWeight: FontWeight.normal, fontSize: 18.0),
+                        ),
+                        // Text(
+                        //   data['Analysis'],
+                        //   style: const TextStyle(fontSize: 16.0),
+                        // ),
+                        // const SizedBox(height: 10.0),
+                        // Image.network(data['visibility']),
+                        // const SizedBox(height: 10.0),
+                        // Text(
+                        //   'Copyright: ${data['coord']}',
+                        //   style: const TextStyle(fontStyle: FontStyle.italic),
+                        // ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(height: 50.0),
-                  const Text(
-                    "SUMMARY",
-                    style:
-                        TextStyle(fontWeight: FontWeight.bold, fontSize: 18.0),
-                  ),
-                  Text(
-                    "$analysis",
-                    style: const TextStyle(
-                        fontWeight: FontWeight.normal, fontSize: 18.0),
-                  ),
-                  const SizedBox(height: 50.0),
-                  const Text(
-                    "STATS",
-                    style:
-                        TextStyle(fontWeight: FontWeight.bold, fontSize: 18.0),
-                  ),
-                  Text(
-                    "Temperature: ${data['main']['temp']}\nPressure: ${data['main']['pressure']}\nHumidity: ${data['main']['humidity']}\nVisibility: ${data['visibility']}",
-                    style: const TextStyle(
-                        fontWeight: FontWeight.normal, fontSize: 18.0),
-                  ),
-                  // Text(
-                  //   data['Analysis'],
-                  //   style: const TextStyle(fontSize: 16.0),
-                  // ),
-                  // const SizedBox(height: 10.0),
-                  // Image.network(data['visibility']),
-                  // const SizedBox(height: 10.0),
-                  // Text(
-                  //   'Copyright: ${data['coord']}',
-                  //   style: const TextStyle(fontStyle: FontStyle.italic),
-                  // ),
-                ],
-              ),
-            );
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          } else {
-            return const Center(child: CircularProgressIndicator());
-          }
-        },
-      ),
-    );
+                  );
+                } else if (snapshot.hasError) {
+                  return Center(child: Text('Error: ${snapshot.error}'));
+                } else {
+                  return const Center(child: CircularProgressIndicator());
+                }
+              },
+            ),
+            FutureBuilder<String>(
+              future: getCurrentCityAndPrint(),
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  String city = snapshot.data!;
+                  return Text("Your current location is identified as: $city");
+                } else if (snapshot.hasError) {
+                  return Text("Error getting city: ${snapshot.error}");
+                } else {
+                  return const LinearProgressIndicator(); // Or any loading indicator
+                }
+              },
+            ),
+          ],
+        ));
   }
 }
 
