@@ -81,15 +81,51 @@ class _MyAppState extends State<MyApp> {
 }
 
 class iss extends StatelessWidget {
+  Future<Map<String, dynamic>> fetchIssData() async {
+    // const mycity = "Bangalore";
+    final response = await http.get(
+        Uri.parse('https://solar-geek-api.onrender.com/v1/getIssLocation'));
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } else {
+      throw Exception('Failed to load data');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: const Text("Live ISS location"),
-        ),
-        body: const Center(
-          child: Text("Lat: Lon: "),
-        ));
+      appBar: AppBar(
+        title: const Text("Live ISS location"),
+      ),
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: fetchIssData(),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            final message = snapshot.data!['Message'];
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Lat: ${message['latitude']}   Lon: ${message['longitude']}",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.normal,
+                      fontSize: 12.0,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          } else {
+            return const Center(child: CircularProgressIndicator());
+          }
+        },
+      ),
+    );
   }
 }
 
@@ -97,7 +133,7 @@ class iss extends StatelessWidget {
 class myhome extends StatelessWidget {
   const myhome({Key? key}) : super(key: key);
   Future<Map<String, dynamic>> fetchWeatherData() async {
-    final mycity = "Bangalore";
+    const mycity = "Bangalore";
     final response = await http.get(Uri.parse(
         'https://solar-geek-api.onrender.com/v1/performWeatherAnalysis?city=$mycity'));
     if (response.statusCode == 200) {
