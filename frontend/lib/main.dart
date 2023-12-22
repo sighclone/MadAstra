@@ -1,4 +1,7 @@
+import 'dart:async';
+import 'package:flutter_sky/flutter_sky.dart';
 import 'package:flutter/material.dart';
+import 'package:frontend/star_background.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:geocoding/geocoding.dart';
@@ -119,6 +122,7 @@ class iss extends StatelessWidget {
                       fontSize: 12.0,
                     ),
                   ),
+
                 ],
               ),
             );
@@ -166,11 +170,14 @@ class myhome extends StatelessWidget {
   }
 
   Future<Map<String, dynamic>> fetchWeatherData() async {
-    const mycity = "Bangalore";
+    final mycity = await getCurrentCityAndPrint();
     final response = await http.get(Uri.parse(
         'https://solar-geek-api.onrender.com/v1/performWeatherAnalysis?city=$mycity'));
     if (response.statusCode == 200) {
-      return jsonDecode(response.body) as Map<String, dynamic>;
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      debugPrint("CITY IS: $mycity");
+      data['city'] = mycity;
+      return data;
     } else {
       throw Exception('Failed to load data');
     }
@@ -179,6 +186,7 @@ class myhome extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+        backgroundColor: const Color.fromARGB(255, 52, 52, 52),
         appBar: AppBar(
           leading: IconButton(
             icon: const Icon(Icons.favorite),
@@ -225,84 +233,142 @@ class myhome extends StatelessWidget {
           ],
           // bottom: ,
         ),
-        body: Column(
-          children: [
-            FutureBuilder<Map<String, dynamic>>(
-              future: fetchWeatherData(),
-              builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  final analysis = snapshot.data!['Analysis'];
-                  final data = snapshot.data!['Data'];
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Lat: ${data['coord']['lat']}   Lon: ${data['coord']['lon']}",
-                          style: const TextStyle(
-                            fontWeight: FontWeight.normal,
-                            fontSize: 12.0,
+        body: Stack(children: [
+          const StarBackground(),
+          Column(
+            children: [
+              FutureBuilder<String>(
+                future: getCurrentCityAndPrint(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    String city = snapshot.data!;
+                    return Text(
+                        "Your current location is identified as: $city");
+                  } else if (snapshot.hasError) {
+                    return Text("Error getting city: ${snapshot.error}");
+                  } else {
+                    // Found a gimmick to keepalive the star animation
+                    return const LinearProgressIndicator(
+                      backgroundColor: Colors.white,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ); // this is FAKE! loads forever <3
+                  }
+                },
+              ),
+              FutureBuilder<Map<String, dynamic>>(
+                future: fetchWeatherData(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    final analysis = snapshot.data!['Analysis'];
+                    final data = snapshot.data!['Data'];
+                    final city = snapshot.data!['city'];
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "‎ Lat: ${data['coord']['lat']}   Lon: ${data['coord']['lon']}   Location: $city ‎ ",
+                            style: const TextStyle(
+                              backgroundColor: Color.fromARGB(255, 52, 52, 52),
+                              color: Colors.white,
+                              fontWeight: FontWeight.normal,
+                              fontSize: 12.0,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 50.0),
-                        const Text(
-                          "SUMMARY",
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 18.0),
-                        ),
-                        Text(
-                          "$analysis",
-                          style: const TextStyle(
-                              fontWeight: FontWeight.normal, fontSize: 18.0),
-                        ),
-                        const SizedBox(height: 50.0),
-                        const Text(
-                          "STATS",
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 18.0),
-                        ),
-                        Text(
-                          "Temperature: ${data['main']['temp']}\nPressure: ${data['main']['pressure']}\nHumidity: ${data['main']['humidity']}\nVisibility: ${data['visibility']}",
-                          style: const TextStyle(
-                              fontWeight: FontWeight.normal, fontSize: 18.0),
-                        ),
-                        // Text(
-                        //   data['Analysis'],
-                        //   style: const TextStyle(fontSize: 16.0),
-                        // ),
-                        // const SizedBox(height: 10.0),
-                        // Image.network(data['visibility']),
-                        // const SizedBox(height: 10.0),
-                        // Text(
-                        //   'Copyright: ${data['coord']}',
-                        //   style: const TextStyle(fontStyle: FontStyle.italic),
-                        // ),
-                      ],
-                    ),
-                  );
-                } else if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                } else {
-                  return const Center(child: CircularProgressIndicator());
-                }
-              },
-            ),
-            FutureBuilder<String>(
-              future: getCurrentCityAndPrint(),
-              builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  String city = snapshot.data!;
-                  return Text("Your current location is identified as: $city");
-                } else if (snapshot.hasError) {
-                  return Text("Error getting city: ${snapshot.error}");
-                } else {
-                  return const LinearProgressIndicator(); // Or any loading indicator
-                }
-              },
-            ),
-          ],
-        ));
+                          const SizedBox(height: 50.0),
+                          const Text(
+                            "SUMMARY",
+                            style: TextStyle(
+                                backgroundColor:
+                                    Color.fromARGB(255, 52, 52, 52),
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18.0),
+                          ),
+                          Text(
+                            "$analysis",
+                            style: const TextStyle(
+                                backgroundColor:
+                                    Color.fromARGB(255, 52, 52, 52),
+                                color: Colors.white,
+                                fontWeight: FontWeight.normal,
+                                fontSize: 18.0),
+                          ),
+                          const SizedBox(height: 50.0),
+                          const Text(
+                            "STATS",
+                            style: TextStyle(
+                                backgroundColor:
+                                    Color.fromARGB(255, 52, 52, 52),
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18.0),
+                          ),
+                          Text(
+                            "Temperature: ${data['main']['temp']}\nPressure: ${data['main']['pressure']}\nHumidity: ${data['main']['humidity']}\nVisibility: ${data['visibility']}",
+                            style: const TextStyle(
+                                backgroundColor:
+                                    Color.fromARGB(255, 52, 52, 52),
+                                //backgroundColor: Colors.black,
+                                color: Colors.white,
+                                fontWeight: FontWeight.normal,
+                                fontSize: 18.0),
+                          ),
+                        ],
+                      ),
+                    );
+                  } else if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  } else {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                },
+              ),
+            ],
+          ),
+        ]));
+  }
+}
+
+class StarBackground extends StatefulWidget {
+  const StarBackground({Key? key}) : super(key: key);
+
+  @override
+  State<StarBackground> createState() => _StarBackgroundState();
+}
+
+class _StarBackgroundState extends State<StarBackground>
+    with TickerProviderStateMixin {
+  // Use TickerProvider for animation
+  late StarBackgroundPainter painter;
+  late Timer timer; // Use a Timer for repainting
+
+  @override
+  void initState() {
+    super.initState();
+    painter = StarBackgroundPainter();
+    _startAnimation();
+  }
+
+  void _startAnimation() {
+    timer = Timer.periodic(const Duration(milliseconds: 16), (_) {
+      setState(() {}); // Trigger repaint
+    });
+  }
+
+  @override
+  void dispose() {
+    timer.cancel(); // Cancel timer on dispose
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: painter,
+      child: Container(),
+    );
   }
 }
 
@@ -319,7 +385,7 @@ class credits extends StatelessWidget {
       ),
       body: const Center(
         child: Text(
-            "Made by Abhinav Sadhu\nPowered by Solar Searcher API - by Sankalp Pandey"),
+            "Made by Abhinav Sadhu\nuses Solar Geek API by Sankalp Pandey"),
       ),
     );
   }
