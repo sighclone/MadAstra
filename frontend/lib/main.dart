@@ -55,7 +55,10 @@ class apod extends StatelessWidget {
           if (snapshot.hasData) {
             final data = snapshot.data!['Data'];
             return SingleChildScrollView(
+                child: Padding(
+              padding: const EdgeInsets.all(20.0),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
                     // ignore: prefer_interpolation_to_compose_strings
@@ -84,7 +87,7 @@ class apod extends StatelessWidget {
                   ),
                 ],
               ),
-            );
+            ));
           } else if (snapshot.hasError) {
             return Center(child: Text('Error: ${snapshot.error}'));
           } else {
