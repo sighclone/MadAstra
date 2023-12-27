@@ -1,15 +1,16 @@
 import 'dart:async';
-import 'package:flutter_sky/flutter_sky.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+// import 'package:frontend/iss.dart';
 import 'package:frontend/star_background.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 void main() {
   debugPrint("ON");
-  debugPrint("OFF");
   runApp(const MyApp());
 }
 
@@ -36,7 +37,16 @@ class apod extends StatelessWidget {
       }
     }
 
+// ignore: no_leading_underscores_for_local_identifiers
+    _launchURL() async {
+      final Uri url = Uri.parse('https://apod.nasa.gov/apod/');
+      if (!await launchUrl(url)) {
+        throw Exception('Could not launch $url');
+      }
+    }
+
     return Scaffold(
+      backgroundColor: const Color.fromARGB(255, 52, 52, 52),
       appBar: AppBar(
           centerTitle: true, title: const Text("Astronomy Pic of the Day!")),
       body: FutureBuilder<Map<String, dynamic>>(
@@ -45,26 +55,32 @@ class apod extends StatelessWidget {
           if (snapshot.hasData) {
             final data = snapshot.data!['Data'];
             return SingleChildScrollView(
-              padding: const EdgeInsets.all(20.0),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                children: <Widget>[
                   Text(
-                    data['date'],
+                    // ignore: prefer_interpolation_to_compose_strings
+                    "Image of " + data['date'],
                     style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 18.0),
-                  ),
-                  const SizedBox(height: 10.0),
-                  Text(
-                    data['explanation'],
-                    style: const TextStyle(fontSize: 16.0),
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18.0),
                   ),
                   const SizedBox(height: 10.0),
                   Image.network(data['url']),
                   const SizedBox(height: 10.0),
                   Text(
                     'Copyright: ${data['copyright']}',
-                    style: const TextStyle(fontStyle: FontStyle.italic),
+                    style: const TextStyle(
+                        color: Colors.white, fontStyle: FontStyle.italic),
+                  ),
+                  Text(
+                    data['explanation'],
+                    style: const TextStyle(color: Colors.white, fontSize: 16.0),
+                  ),
+                  const SizedBox(height: 10.0),
+                  TextButton(
+                    onPressed: _launchURL,
+                    child: const Text("Find out more at NASA APOD."),
                   ),
                 ],
               ),
@@ -84,56 +100,6 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return const MaterialApp(home: myhome());
-  }
-}
-
-class iss extends StatelessWidget {
-  Future<Map<String, dynamic>> fetchIssData() async {
-    // const mycity = "Bangalore";
-    final response = await http.get(
-        Uri.parse('https://solar-geek-api.onrender.com/v1/getIssLocation'));
-    if (response.statusCode == 200) {
-      return jsonDecode(response.body) as Map<String, dynamic>;
-    } else {
-      throw Exception('Failed to load data');
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Live ISS location"),
-      ),
-      body: FutureBuilder<Map<String, dynamic>>(
-        future: fetchIssData(),
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            final message = snapshot.data!['Message'];
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Lat: ${message['latitude']}   Lon: ${message['longitude']}",
-                    style: const TextStyle(
-                      fontWeight: FontWeight.normal,
-                      fontSize: 12.0,
-                    ),
-                  ),
-
-                ],
-              ),
-            );
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          } else {
-            return const Center(child: CircularProgressIndicator());
-          }
-        },
-      ),
-    );
   }
 }
 
@@ -205,7 +171,7 @@ class myhome extends StatelessWidget {
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (context) => iss(),
+                    builder: (context) => const iss(),
                   ),
                 );
               },
@@ -368,6 +334,81 @@ class _StarBackgroundState extends State<StarBackground>
     return CustomPaint(
       painter: painter,
       child: Container(),
+    );
+  }
+}
+
+// ignore: camel_case_types
+class iss extends StatelessWidget {
+  const iss({Key? key}) : super(key: key);
+  Future<Map<String, dynamic>> fetchIssData() async {
+    final response = await http.get(
+        Uri.parse('https://solar-geek-api.onrender.com/v1/getIssLocation'));
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } else {
+      throw Exception('Failed to load data');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    launchMyURL(lat, lon) async {
+      fetchIssData();
+      final Uri url =
+          Uri.parse('http://maps.google.com/maps?z=11&t=m&q=loc:$lat+$lon');
+
+      //http://maps.google.com/maps?z=11&t=m&q=loc:$lat+$lon
+      debugPrint(url.toString());
+      if (!await launchUrl(url)) {
+        throw Exception('Could not launch $url');
+      }
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Live ISS location"),
+      ),
+      body: FutureBuilder<Map<String, dynamic>>(
+        future: fetchIssData(),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            final message = snapshot.data!['Message'];
+            final String lat = message['latitude'].toString();
+            final String lon = message['longitude'].toString();
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "\n\nLat: $lat   Lon: $lon\n",
+                    style: const TextStyle(
+                      fontWeight: FontWeight.normal,
+                      fontSize: 12.0,
+                    ),
+                  ),
+                  const SizedBox(height: 10.0),
+                  TextButton(
+                    onPressed: () async {
+                      try {
+                        await launchMyURL(lat, lon);
+                      } catch (err) {
+                        debugPrint('... Unable to launch URL');
+                      }
+                    },
+                    child: const Text("Click to view in Google Maps!"),
+                  ),
+                ],
+              ),
+            );
+          } else if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          } else {
+            return const Center(child: CircularProgressIndicator());
+          }
+        },
+      ),
     );
   }
 }
