@@ -1,1 +1,2 @@
 # MadAstra
+A stargazing-focused weather analysis cross-platform mobile app made with Flutter. Additionally features utilizing the NASA's APoD open API, device-location-based analyses and patametrized animations. To download (android only), head to the [`releases`](https://github.com/sighclone/MadAstra/releases) section and install the APK. Uses the [solar-geek API](https://github.com/SANKALP1011/SolarSearcherBackend) made by [Sankalp Paney](https://github.com/SANKALP1011/) for weather analysis information (Do check out his quality work!).
